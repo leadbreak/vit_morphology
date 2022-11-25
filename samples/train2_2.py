@@ -13,8 +13,8 @@ import torch.nn.functional as F
 
 from customModel import *
 
-device = 'cuda:1'
-target = 0
+device = 'cuda:2'
+target = 1
 
 inputs = np.load('./inputs2.npy')
 
