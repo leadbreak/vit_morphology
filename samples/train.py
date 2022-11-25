@@ -128,10 +128,10 @@ class DiceLoss(nn.Module):
         inputs = inputs.view(-1)
         targets = targets.view(-1)
         
-        intersection = abs(inputs * targets).sum()                            
-        dice = (2.*intersection + smooth)/(abs(inputs.sum()) + abs(targets.sum()) + smooth)  
+        intersection = (inputs * targets).sum()                            
+        dice = (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)  
         
-        return 1 - dice
+        return abs(1 - dice)
 
 
 vit.train()
