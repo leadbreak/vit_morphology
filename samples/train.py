@@ -115,8 +115,27 @@ def train_model(net, dataloader, criterion, optimizer, num_epochs) :
                     torch.save(net, f"./models/{fileName}")
                     print(f"- Model Saved", end=' ')
 
+class DiceLoss(nn.Module):
+    def __init__(self, weight=None, size_average=True):
+        super(DiceLoss, self).__init__()
+
+    def forward(self, inputs, targets, smooth=1):
+        
+        #comment out if your model contains a sigmoid or equivalent activation layer
+        inputs = torch.sigmoid(inputs)       
+        
+        #flatten label and prediction tensors
+        inputs = inputs.view(-1)
+        targets = targets.view(-1)
+        
+        intersection = abs(inputs * targets).sum()                            
+        dice = (2.*intersection + smooth)/(abs(inputs.sum()) + abs(targets.sum()) + smooth)  
+        
+        return 1 - dice
+
+
 vit.train()
-criterion = nn.CrossEntropyLoss()
+criterion = DiceLoss()
 
 optimizer = torch.optim.AdamW(vit.parameters(), lr=1)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
@@ -126,7 +145,7 @@ num_epochs=30
 train_model(vit, dataloader, criterion, optimizer, num_epochs) 
 
 vit.train()
-criterion = nn.CrossEntropyLoss()
+criterion = DiceLoss()
 
 optimizer = torch.optim.AdamW(vit.parameters(), lr=0.1)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
@@ -136,7 +155,7 @@ num_epochs=100
 train_model(vit, dataloader, criterion, optimizer, num_epochs) 
 
 vit.train()
-criterion = nn.CrossEntropyLoss()
+criterion = DiceLoss()
 
 optimizer = torch.optim.AdamW(vit.parameters(), lr=0.01)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
@@ -146,7 +165,7 @@ num_epochs=100
 train_model(vit, dataloader, criterion, optimizer, num_epochs) 
 
 vit.train()
-criterion = nn.CrossEntropyLoss()
+criterion = DiceLoss()
 
 optimizer = torch.optim.AdamW(vit.parameters(), lr=0.001)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
@@ -156,7 +175,7 @@ num_epochs=300
 train_model(vit, dataloader, criterion, optimizer, num_epochs) 
 
 vit.train()
-criterion = nn.CrossEntropyLoss()
+criterion = DiceLoss()
 
 optimizer = torch.optim.AdamW(vit.parameters(), lr=0.0001)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
