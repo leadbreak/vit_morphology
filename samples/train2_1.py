@@ -13,19 +13,22 @@ import torch.nn.functional as F
 
 from customModel import *
 
-device = 'cuda:0'
-inputs = np.load('./inputs.npy')
+device = 'cuda:1'
+target = 0
+
+inputs = np.load('./inputs2.npy')
 
 inputs[:, 0] = inputs[:, 0].astype('uint8') / 255
 inputs[:, 1] = (inputs[:, 1] * 255).astype('uint8') / 255
 
-outputs = np.load('./outputs.npy')
+outputs = np.load('./outputs2.npy')
+outputs = outputs[:, target:target+2]
 
 print(inputs.shape, outputs.shape)
 
 # Build Model
 
-num_classes = 4
+num_classes = 2
 batch_size, channel, height, width = inputs.shape
 x = torch.Tensor(inputs[:1])
 vit = ViT(in_channels=channel, num_classes=num_classes)
@@ -111,8 +114,8 @@ def train_model(net, dataloader, criterion, optimizer, num_epochs) :
                 v_loss = epoch_loss
                 if (epoch > 0) & (v_loss < minimumLoss) :
                     minimumLoss = v_loss
-                    fileName = datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + f"_{epoch+1}"+ f"_{t_loss:.4f}" + f"_{v_loss:.4f}_4.pt" # 생성 시간과 개수로 저장
-                    torch.save(net, f"./models/{fileName}")
+                    fileName = datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + f"_{epoch+1}"+ f"_{t_loss:.4f}" + f"_{v_loss:.4f}.pt" # 생성 시간과 개수로 저장
+                    torch.save(net, f"./models/label_{target}/{fileName}")
                     print(f"- Model Saved", end=' ')
 
 vit.train()
