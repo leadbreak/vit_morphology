@@ -16,16 +16,24 @@ from PIL import Image
 
 # Dataset Class
 class customDataset(torch.utils.data.Dataset) :
-    def __init__(self, X, Y) :
+    def __init__(self, X, Y, transform:None) :
         self.X = X
         self.Y = Y
+        self.transform = transform
 
         
     def __len__(self) :
         return len(self.X)
     
-    def __getitem__(self, index) :                  
-          
+    def __getitem__(self, index) :          
+        
+        if self.transform :
+            random_state = np.random.randint(0, 1000)
+            if random_state != 1 :
+                transformed = self.transform(image=self.X[index], mask=self.Y[index])
+                return transformed["image"].permute(1,0,2), transformed["mask"]
+
+
         return torch.Tensor(self.X[index]), torch.Tensor(self.Y[index])
 
 

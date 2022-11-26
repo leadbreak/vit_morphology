@@ -13,6 +13,10 @@ import torch.nn.functional as F
 
 from customModel import *
 
+import albumentations as A
+import albumentations.augmentations.functional as F
+from albumentations.pytorch import ToTensorV2
+
 device = 'cuda:1'
 target = 0
 
@@ -21,7 +25,7 @@ inputs = np.load('./inputs2.npy')
 inputs[:, 0] = inputs[:, 0].astype('uint8') / 255
 inputs[:, 1] = (inputs[:, 1] * 255).astype('uint8') / 255
 
-outputs = np.load('./outputs2.npy')
+outputs = np.load('./outputs2.npy').astype('float32')
 outputs = outputs[:, target:target+2]
 
 print(inputs.shape, outputs.shape)
@@ -33,21 +37,33 @@ batch_size, channel, height, width = inputs.shape
 x = torch.Tensor(inputs[:1])
 vit = ViT(in_channels=channel, num_classes=num_classes)
 
+# transformer for aug
+transform = A.Compose(
+    [   A.ShiftScaleRotate(shift_limit=0.6, scale_limit=0.6, rotate_limit=30, p=0.6),
+        ToTensorV2( )   ]
+)
 
 # custom dataset
-dataset = customDataset(X=inputs, Y=outputs)
+trainDataset = customDataset(X=inputs, Y=outputs, transform=transform)
+validDataset = customDataset(X=inputs, Y=outputs, transform=None)
 batch_size = 5
-dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True)
+trainDataloader = torch.utils.data.DataLoader(trainDataset, batch_size=batch_size, shuffle=True)
+validDataloader = torch.utils.data.DataLoader(trainDataset, batch_size=batch_size, shuffle=False)
+
+dataloaders_dict = {"train":trainDataloader, "val":validDataloader}
+
 
 # test dataloader
-batch_iterator = iter(dataloader)
+batch_iterator = iter(trainDataloader)
 inputs, labels = next(batch_iterator)
 print(inputs.size(), labels.size())
 
-def train_model(net, dataloader, criterion, optimizer, num_epochs) :
+
+
+def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs) :
     global device
     
-    minimumLoss = 1
+    minimumLoss = 10
     device = torch.device(device)
     print("사용장치 :", device)
     
@@ -79,7 +95,7 @@ def train_model(net, dataloader, criterion, optimizer, num_epochs) :
             print(f"Epoch {epoch+1}/{num_epochs}", end=' ')
             
             # 데이터 로더에서 미니 배치를 꺼내 루프
-            for inputs, labels in dataloader :
+            for inputs, labels in dataloaders_dict[phase] :
                 
                 # GPU를 사용할 수 있으면 GPU에 데이터 보냄
                 inputs = inputs.to(device)
@@ -104,7 +120,7 @@ def train_model(net, dataloader, criterion, optimizer, num_epochs) :
                     # epoch_corrects += torch.sum(outputs == labels.data)
                         
             # epoch 별 손실과 정답률 표시
-            epoch_loss = epoch_loss / len(dataloader.dataset)
+            epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
 
 
             print(f"{phase} Loss : {epoch_loss:.4f}", end=' ')
@@ -124,9 +140,9 @@ criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(vit.parameters(), lr=1)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
-num_epochs=30
+num_epochs=10
 
-train_model(vit, dataloader, criterion, optimizer, num_epochs) 
+train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
 
 vit.train()
 criterion = nn.CrossEntropyLoss()
@@ -134,9 +150,9 @@ criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(vit.parameters(), lr=0.1)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
-num_epochs=100
+num_epochs=50
 
-train_model(vit, dataloader, criterion, optimizer, num_epochs) 
+train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
 
 vit.train()
 criterion = nn.CrossEntropyLoss()
@@ -146,7 +162,7 @@ optimizer = torch.optim.AdamW(vit.parameters(), lr=0.01)
 
 num_epochs=100
 
-train_model(vit, dataloader, criterion, optimizer, num_epochs) 
+train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
 
 vit.train()
 criterion = nn.CrossEntropyLoss()
@@ -154,9 +170,9 @@ criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(vit.parameters(), lr=0.001)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
-num_epochs=300
+num_epochs=500
 
-train_model(vit, dataloader, criterion, optimizer, num_epochs) 
+train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
 
 vit.train()
 criterion = nn.CrossEntropyLoss()
@@ -164,6 +180,6 @@ criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.AdamW(vit.parameters(), lr=0.0001)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
-num_epochs=1000
+num_epochs=5000
 
-train_model(vit, dataloader, criterion, optimizer, num_epochs) 
+train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
