@@ -29,9 +29,8 @@ class customDataset(torch.utils.data.Dataset) :
         
         if self.transform :
             random_state = np.random.randint(0, 1000)
-            if random_state != 1 :
-                transformed = self.transform(image=self.X[index], mask=self.Y[index])
-                return transformed["image"].permute(1,0,2), transformed["mask"]
+            transformed = self.transform(image=self.X[index], mask=self.Y[index])
+            return transformed["image"].permute(1,0,2), transformed["mask"]
 
 
         return torch.Tensor(self.X[index]), torch.Tensor(self.Y[index])
