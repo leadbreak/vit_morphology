@@ -40,7 +40,7 @@ vit = ViT(in_channels=channel, num_classes=num_classes)
 # transformer for aug
 transform = A.Compose(
     [A.HorizontalFlip(p=0.5),
-     A.ShiftScaleRotate(shift_limit=0.6, scale_limit=0.6, rotate_limit=30, p=0.999),
+     A.ShiftScaleRotate(shift_limit=0.01, scale_limit=0.3, rotate_limit=5, p=1, border_mode=0),
      ToTensorV2( )   ]
 )
 

@@ -17,7 +17,7 @@ import albumentations as A
 import albumentations.augmentations.functional as F
 from albumentations.pytorch import ToTensorV2
 
-device = 'cuda:1'
+device = 'cuda:3'
 inputs = np.load('./inputs.npy').astype('float32')
 outputs = np.load('./outputs.npy').astype('float32')
 
@@ -40,7 +40,7 @@ transform = A.Compose(
 # custom dataset
 trainDataset = customDataset(X=inputs, Y=outputs, transform=transform)
 validDataset = customDataset(X=inputs, Y=outputs, transform=None)
-batch_size = 3
+batch_size = 5
 trainDataloader = torch.utils.data.DataLoader(trainDataset, batch_size=batch_size, shuffle=True)
 validDataloader = torch.utils.data.DataLoader(trainDataset, batch_size=batch_size, shuffle=False)
 
@@ -52,13 +52,11 @@ inputs, labels = next(batch_iterator)
 print(inputs.size(), labels.size())
 
 
-def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, early:bool=True) :
+def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs) :
     global device
     
     minimumLoss = 1
     cnt = 0
-    stopping = int(num_epochs**0.5)
-    
     device = torch.device(device)
     print("\n사용장치 :", device)
     
@@ -115,7 +113,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, early:b
                     # epoch_corrects += torch.sum(outputs == labels.data)
                         
             # epoch 별 손실과 정답률 표시
-            epoch_loss = epoch_loss
+            epoch_loss = epoch_loss / len(dataloaders_dict[phase].dataset)
 
 
             print(f"{phase} Loss : {epoch_loss:.4f}", end=' ')
@@ -125,37 +123,18 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs, early:b
                 v_loss = epoch_loss
                 if (epoch > 0) & (v_loss < minimumLoss) :
                     minimumLoss = v_loss
-                    fileName = datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + f"_{epoch+1}"+ f"_{t_loss:.4f}" + f"_{v_loss:.4f}_01.pt" # 생성 시간과 개수로 저장
+                    fileName = datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + f"_{epoch+1}"+ f"_{t_loss:.4f}" + f"_{v_loss:.4f}_00.pt" # 생성 시간과 개수로 저장
                     torch.save(net, f"./models/{fileName}")
                     print(f"- Model Saved", end=' ')
                     cnt = 0
                 else :
                     cnt += 1
-        # if early & (cnt > stopping) :
-        #     print("\nEarly Stopping\n")
-        #     break
-
-class DiceLoss(nn.Module):
-    def __init__(self, weight=None, size_average=True):
-        super(DiceLoss, self).__init__()
-
-    def forward(self, inputs, targets, smooth=1):
-        
-        #comment out if your model contains a sigmoid or equivalent activation layer
-        inputs = torch.sigmoid(inputs)       
-        
-        #flatten label and prediction tensors
-        inputs = inputs.view(-1)
-        targets = targets.view(-1)
-        
-        intersection = (inputs * targets).sum()                            
-        dice = (2.*intersection + smooth)/(inputs.sum() + targets.sum() + smooth)  
-        
-        return 1 - dice
-
+                    if cnt > 5 :
+                        print("Early Stopping")
+                        break         
 
 # vit.train()
-# criterion = DiceLoss()
+# criterion = nn.CrossEntropyLoss()
 
 # optimizer = torch.optim.AdamW(vit.parameters(), lr=1)
 # # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
@@ -164,42 +143,38 @@ class DiceLoss(nn.Module):
 
 # train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
 
-# vit.train()
-# criterion = DiceLoss()
-
-# optimizer = torch.optim.AdamW(vit.parameters(), lr=0.1)
-# # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
-
-# num_epochs=100
-
-# train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
-
-# vit.train()
-# criterion = DiceLoss()
-
-# optimizer = torch.optim.AdamW(vit.parameters(), lr=0.01)
-# # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
-
-# num_epochs=100
-
-# train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
-
-# vit.train()
-# criterion = DiceLoss()
-
-# optimizer = torch.optim.AdamW(vit.parameters(), lr=0.001)
-# # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
-
-# num_epochs=300
-
-# train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
-
 vit.train()
-criterion = DiceLoss()
-
-optimizer = torch.optim.AdamW(vit.parameters(), lr=0.00031)
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.AdamW(vit.parameters(), lr=0.1)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
-num_epochs=10000
+num_epochs=100
+
+train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
+
+vit.train()
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.AdamW(vit.parameters(), lr=0.01)
+# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+
+num_epochs=100
+
+train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
+
+vit.train()
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.AdamW(vit.parameters(), lr=0.001)
+# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+
+num_epochs=300
+
+train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
+
+vit.train()
+criterion = nn.CrossEntropyLoss()
+optimizer = torch.optim.AdamW(vit.parameters(), lr=0.0001)
+# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+
+num_epochs=1000
 
 train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 

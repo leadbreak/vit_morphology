@@ -28,7 +28,6 @@ class customDataset(torch.utils.data.Dataset) :
     def __getitem__(self, index) :          
         
         if self.transform :
-            random_state = np.random.randint(0, 1000)
             transformed = self.transform(image=self.X[index], mask=self.Y[index])
             return transformed["image"].permute(1,0,2), transformed["mask"]
 
@@ -109,7 +108,7 @@ class VitInputLayer(nn.Module) :
 class MultiHeadSelfAttention(nn.Module) :
     def __init__(self,
                  emb_dim:int=512,  # embedding vector 길이
-                 head:int=4,       # head 개수
+                 head:int=12,       # head 개수
                  dropout:float=0.3  # dropout rate
                 ) :
         
@@ -192,7 +191,7 @@ class VitEncoderBlock(nn.Module) :
     def __init__(
                 self,
                 emb_dim:int=512,
-                head:int=8,
+                head:int=12,
                 hidden_dim:int=512*4,
                 dropout:float=0.3
                 ) :
@@ -298,7 +297,7 @@ class VitDecoderBlock(nn.Module) :
     def __init__(
                  self,
                  emb_dim:int=512,
-                 head:int=8,
+                 head:int=12,
                  hidden_dim:int=512*4,
                  dropout:float=0.3
                  ) :
@@ -392,7 +391,7 @@ class ViT(nn.Module) :
                  num_patch_row:int=64,
                  image_size:int=512,
                  num_blocks:int=4,     # Encoder Block의 수
-                 head:int=16,
+                 head:int=32,
                  hidden_dim:int=512*8,
                  dropout:float=0.3,
                 ) :

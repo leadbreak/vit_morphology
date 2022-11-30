@@ -42,7 +42,7 @@ vit = ViT(in_channels=channel, num_classes=num_classes)
 # transformer for aug
 transform = A.Compose(
     [A.HorizontalFlip(p=0.5),
-     A.ShiftScaleRotate(shift_limit=0.6, scale_limit=0.6, rotate_limit=30, p=0.999),
+     A.ShiftScaleRotate(shift_limit=0.01, scale_limit=0.3, rotate_limit=5, p=1, border_mode=0),
      ToTensorV2( )   ]
 )
 
@@ -67,6 +67,7 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs) :
     global device
     
     minimumLoss = 10
+    cnt = 0
     device = torch.device(device)
     print("사용장치 :", device)
     
@@ -136,6 +137,12 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs) :
                     fileName = datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + f"_{epoch+1}"+ f"_{t_loss:.4f}" + f"_{v_loss:.4f}.pt" # 생성 시간과 개수로 저장
                     torch.save(net, f"./models/label_{target}/{fileName}")
                     print(f"- Model Saved", end=' ')
+                    cnt = 0
+                else :
+                    cnt += 1
+                    if cnt > 5 :
+                        print("Early Stopping")
+                        break
 
 vit.train()
 criterion = nn.CrossEntropyLoss()

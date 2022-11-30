@@ -32,15 +32,15 @@ vit = ViT(in_channels=channel, num_classes=num_classes)
 
 # transformer for aug
 transform = A.Compose(
-    [A.HorizontalFlip(p=0.5),
-     A.ShiftScaleRotate(shift_limit=0.6, scale_limit=0.6, rotate_limit=30, p=0.999),
+    [A.HorizontalFlip(p=0.2),
+     A.ShiftScaleRotate(shift_limit=0.01, scale_limit=0.3, rotate_limit=5, p=0.999, border_mode=0),
      ToTensorV2()   ]
 )
 
 # custom dataset
 trainDataset = customDataset(X=inputs, Y=outputs, transform=transform)
 validDataset = customDataset(X=inputs, Y=outputs, transform=None)
-batch_size = 5
+batch_size = 3
 trainDataloader = torch.utils.data.DataLoader(trainDataset, batch_size=batch_size, shuffle=True)
 validDataloader = torch.utils.data.DataLoader(trainDataset, batch_size=batch_size, shuffle=False)
 
@@ -55,9 +55,10 @@ print(inputs.size(), labels.size())
 def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs) :
     global device
     
-    minimumLoss = 10
+    minimumLoss = 1
+    cnt = 0
     device = torch.device(device)
-    print("사용장치 :", device)
+    print("\n사용장치 :", device)
     
     # 네트워크를 device로
     net.to(device)
@@ -125,17 +126,22 @@ def train_model(net, dataloaders_dict, criterion, optimizer, num_epochs) :
                     fileName = datetime.datetime.now().strftime('%Y%m%d_%H%M%S') + f"_{epoch+1}"+ f"_{t_loss:.4f}" + f"_{v_loss:.4f}_00.pt" # 생성 시간과 개수로 저장
                     torch.save(net, f"./models/{fileName}")
                     print(f"- Model Saved", end=' ')
-                    
+                    cnt = 0
+                else :
+                    cnt += 1
+        if cnt > 5 :
+            print("\nEarly Stopping\n")
+            break        
 
-vit.train()
-criterion = nn.CrossEntropyLoss()
+# vit.train()
+# criterion = nn.CrossEntropyLoss()
 
-optimizer = torch.optim.AdamW(vit.parameters(), lr=1)
-# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
+# optimizer = torch.optim.AdamW(vit.parameters(), lr=1)
+# # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, 'min')
 
-num_epochs=30
+# num_epochs=30
 
-train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
+# train_model(vit, dataloaders_dict, criterion, optimizer, num_epochs) 
 
 vit.train()
 criterion = nn.CrossEntropyLoss()
